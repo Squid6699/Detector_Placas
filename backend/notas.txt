@@ -1,0 +1,7 @@
+CREAR ENTORNO
+python -m venv detectar_placas
+
+ACTIVAR ENTORNO
+detectar_placas\Scripts\activate
+
+pip install -r requirements.txt

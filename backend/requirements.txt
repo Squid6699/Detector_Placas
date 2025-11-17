@@ -1,0 +1,6 @@
+ultralytics
+imutils # REDIMENSIONAR IMAGENES
+paddlepaddle # FRAMEWORK DE DEEP LEARNING
+paddleocr # OCR
+flask
+flask-cors
