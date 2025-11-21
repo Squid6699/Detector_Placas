@@ -43,6 +43,10 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "HOST_BACKEND_ANDROID": "http://10.0.2.2:5000",
+      "HOST_BACKEND_IOS": "http://192.168.100.41:5000"
     }
   }
 }

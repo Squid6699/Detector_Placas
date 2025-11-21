@@ -5,13 +5,13 @@ import imutils
 import re
 
 #Cargar imagen de entrada como prueba
-image_path = cv2.imread("img/IMG_0503.jpg")
+image_path = cv2.imread("img/IMG_0504.jpg")
 
 #Iniciar el modelo
 model = YOLO("best.pt")
 ocr = PaddleOCR(use_angle_cls=True, lang='en')
 
-blacklist = ["grupo", "premie", "premier", "mx", "com", "agency", "automotriz"]
+blacklist = ["grupo", "premie", "premier", "mx", "com", "agency", "automotriz", "romes", "nissan", "sinaloa"]
 
 results = model(image_path)
 

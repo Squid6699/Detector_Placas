@@ -18,7 +18,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 model = YOLO("best.pt")
 ocr = PaddleOCR(use_angle_cls=True, lang='en')
 
-blacklist = ["grupo", "premie", "premier", "mx", "com", "agency", "automotriz", "auto", "motors", "dealer", "deals", "online", "ventas", "venta", "motor", "motorsport", "premler"]
+blacklist = ["grupo", "premie", "premier", "mx", "com", "agency", "automotriz", "auto", "motors", "dealer", "deals", "online", "ventas", "venta", "motor", "motorsport", "premler", "romes", "nissan", "sinaloa"]
 plate_pattern = r'^[A-Z0-9]{5,8}$'
 
 
@@ -146,7 +146,7 @@ def test():
 
                         return jsonify({
                             "success": True,
-                            "placa": cleaned_text,
+                            "placas": cleaned_text,
                         })
             
 
@@ -154,6 +154,15 @@ def test():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/create-incidence", methods=["POST"])
+def create_incidence():
+    try:
+        data = request.get_json()
+        print(data)
+        
+        return jsonify({"success": True, "message": "Incidencia creada correctamente"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":

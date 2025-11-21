@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from "expo-router";
+import Constants from "expo-constants";
 
 
 export default function index() {
@@ -9,6 +10,7 @@ export default function index() {
   const [permission, requestPermission] = useCameraPermissions();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { HOST_BACKEND_IOS } = Constants.expoConfig?.extra;
 
   const tomarFoto = async () => {
     if (!cameraRef.current) return;
@@ -45,7 +47,7 @@ export default function index() {
       } as any);
 
       // Enviar al servidor
-      const response = await fetch("http://192.168.100.11:5000/detectar-placa", {
+      const response = await fetch(`${HOST_BACKEND_IOS}/test`, {
         method: "POST",
         body: formData,
         headers: {
@@ -63,6 +65,7 @@ export default function index() {
             lat: latitude.toString(),
             lng: longitude.toString(),
             fecha: fechaHora.toString(),
+            foto: foto.uri,
           }
         });
 
