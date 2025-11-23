@@ -4,7 +4,10 @@ CREATE DATABASE detector_placas;
 CREATE TABLE usuarios (
     id_usuario SERIAL PRIMARY KEY,
     nombre VARCHAR(100),
-    apellidos VARCHAR(100)
+    apellidos VARCHAR(100),
+    email VARCHAR(100) UNIQUE NOT NULL,
+    contrasena VARCHAR(100) NOT NULL,
+    rol VARCHAR(50) NOT NULL DEFAULT 'usuario'
 );
 
 CREATE TABLE vehiculos (
@@ -23,6 +26,8 @@ CREATE TABLE incidencias (
     descripcion VARCHAR(255),
     fecha TIMESTAMP NOT NULL,
     latitud DECIMAL(9,6),
-    longitud DECIMAL(9,6)
+    longitud DECIMAL(9,6),
+    fotoPrincipal BYTEA,
+    fotosEvidencia BYTEA[]
 
 );

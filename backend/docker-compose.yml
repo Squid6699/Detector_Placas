@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:15
+    container_name: postgres-detector-placas
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: detector_placas_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./detector_placas.sql:/docker-entrypoint-initdb.d/detector_placas.sql
+
+volumes:
+  postgres_data:
