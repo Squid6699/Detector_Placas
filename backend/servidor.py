@@ -7,12 +7,38 @@ import re
 from flask_cors import CORS
 import os
 from datetime import datetime
+import psycopg2
 
 app = Flask(__name__)
 CORS(app)
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+# Variables de entorno definidas en env 
+
+DB_HOST = os.getenv("DB_HOST") 
+DB_NAME = os.getenv("POSTGRES_DB") 
+DB_USER = os.getenv("POSTGRES_USER")
+DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+DB_PORT = os.getenv("DB_PORT", "5432")
+
+def get_db_connection():
+    try:
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            port=DB_PORT
+        )
+        print("Conexión exitosa a PostgreSQL .")
+        return conn
+    except Exception as e:
+        print(f"error: No se pudo conectar a la base de datos: {e}")
+        return None
+
+db_conn = get_db_connection()
 
 # Cargar modelos
 model = YOLO("best.pt")
@@ -96,7 +122,6 @@ def detectar_placa():
 
 
 
-
 @app.route("/test", methods=["POST"])
 def test():
     try:
@@ -153,7 +178,6 @@ def test():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @app.route("/create-incidence", methods=["POST"])
 def create_incidence():
     try:
@@ -163,7 +187,6 @@ def create_incidence():
         return jsonify({"success": True, "message": "Incidencia creada correctamente"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

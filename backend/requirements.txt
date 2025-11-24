@@ -4,3 +4,5 @@ paddlepaddle # FRAMEWORK DE DEEP LEARNING
 paddleocr # OCR
 flask
 flask-cors
+
+psycopg2-binary # Conector de PostgreSQL
