@@ -5,3 +5,13 @@ ACTIVAR ENTORNO
 detectar_placas\Scripts\activate
 
 pip install -r requirements.txt
+
+
+Para acceder a la base de datos
+docker exec -it postgres_local psql -U postgres -d detector_placas
+
+Para iniciar el contenedor
+docker compose up --build
+
+Para ver todas las tablas en postgresql
+\dt 

@@ -8,6 +8,8 @@ from flask_cors import CORS
 import os
 from datetime import datetime
 import psycopg2
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -168,6 +170,16 @@ def test():
 
                         # Si pasa todos los filtros, esto sí es una placa real
                         # print("Detected Plate Text:", cleaned_text)
+                        
+                        # INSERCCION EN LA BASE DE DATOS
+                        # cursor = db_conn.cursor()
+                        # query = "INSERT INTO usuarios (nombre, apellidos, email, contrasena, rol) VALUES (%s, %s, %s, %s, %s);"
+                        
+                        # cursor.execute(query, ("Alma", "Cuen", "alma.cuen@gmail.com", "alma123", "usuario"))
+                        
+                        # db_conn.commit()
+                        # cursor.close()
+                        
 
                         return jsonify({
                             "success": True,

@@ -1,31 +1,18 @@
-services:
-  app:
-    build: . 
-    container_name: placas_python_app
-    ports:
-      - "${FLASK_APP_PORT}:${FLASK_APP_PORT}" 
-    depends_on:
-      - db
-    
-    env_file: .env 
+version: '3.8'
 
-    environment:
-      DB_HOST: db               
-      PYTHONUNBUFFERED: 1
-      
-  db:
-    image: postgres:15
-    container_name: postgres-detector-placas
-    restart: always
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres_local
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: detector_placas_db
+      POSTGRES_DB: detector_placas
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
       - ./detector_placas.sql:/docker-entrypoint-initdb.d/detector_placas.sql
+      - postgres_data:/var/lib/postgresql/data
 
 volumes:
   postgres_data:
