@@ -199,6 +199,34 @@ def create_incidence():
         return jsonify({"success": True, "message": "Incidencia creada correctamente"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+    
+@app.route("/login", methods=["POST"])
+def login():
+    try:
+        data = request.get_json()
+        email = data.get("email").lower()
+        password = data.get("password")
+        
+        cursor = db_conn.cursor()
+        query = "SELECT id_usuario, nombre, apellidos, rol FROM usuarios WHERE email = %s AND contrasena = %s;"
+        cursor.execute(query, (email, password))
+        user = cursor.fetchone()
+        cursor.close()
+        
+        if user:
+            user_data = {
+                "id_usuario": user[0],
+                "nombre": user[1],
+                "apellidos": user[2],
+                "rol": user[3]
+            }
+            return jsonify({"success": True, "user": user_data, "token": "dummy-jwt-token"}), 200
+        else:
+            return jsonify({"success": False, "message": "Credenciales inválidas"}), 401
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
