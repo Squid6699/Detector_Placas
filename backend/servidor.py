@@ -217,14 +217,16 @@ def create_incidence():
 
         # INSERTAR INCIDENCIA
 
+        query_incidencia = """INSERT INTO incidencias ( id_infractor, id_vehiculo, descripcion, latitud, longitud, fecha, fotoPrincipal , fotosEvidencia)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s,%s) RETURNING id_incidencia;"""
+        cursor.execute(query_incidencia, (id_infractor, id_vehiculo,descripcion,lat,lon,fecha,imagen,evidencias))
+        id_incidencia = cursor.fetchone()[0] 
+        conn.commit()
 
-
-
-        
         return jsonify({"success": True, "message": "Incidencia creada correctamente"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
     
 @app.route("/login", methods=["POST"])
 def login():
@@ -254,17 +256,166 @@ def login():
         return jsonify({"error": str(e)}), 500
     
 
-
-
 # ENDPOINT PARA OBTENER TODAS LAS INCIDENCIAS
+
+@app.route("/obtener-incidencias", methods=["GET"])
+def obtener_incidencias():
+    try:
+        cursor = db_conn.cursor()
+        query=""" SELECT  i.id_incidencia, i.descripcion, i.fecha, i.latitud, i.longitud,i.fotoPrincipal,
+        i.fotosEvidencia,v.placa,u.nombre, u.apellidos
+        FROM incidencias i
+        JOIN vehiculos v ON i.id_vehiculo = v.id_vehiculo
+        JOIN usuarios u ON i.id_usuario = u.id_usuario
+        ORDER BY i.fecha DESC;
+        """
+        cursor.execute(query)
+        incidencias_db = cursor.fetchall()
+
+        incidencias_list = []
+        for inc in incidencias_db:
+            incidencias_list.append({
+                "id_incidencia": inc[0],
+                "descripcion": inc[1],
+                "fecha": inc[2].isoformat() if inc[2] else None,
+                "latitud": str(inc[3]),
+                "longitud": str(inc[4]),
+                "foto_principal": inc[5],
+                "fotos_evidencia": inc[6],
+                "placa_vehiculo": inc[7],
+                "usuario_reportador": f"{inc[8]} {inc[9]}"
+            })
+
+        return jsonify({
+            "success": True,"incidencias": incidencias_list
+        })
+    
+    except Exception as e:
+        print(f"Error al obtener incidencias: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # ENDPOINT PARA CREAR UN USUARIO
 
+@app.route("/crear-usuarios", methods=["POST"])
+def crear_usuario():
+    try:
+        data = request.get_json()
+        print(data)
+        
+        nombre = data.get("nombre")
+        apellidos = data.get("apellidos")
+        email = data.get("email").lower()
+        contrasena = data.get("contrasena")
+    
+        cursor = db_conn.cursor()
+        query = """ INSERT INTO usuarios (nombre, apellidos, email, contrasena)
+        VALUES (%s, %s, %s, %s)RETURNING id_usuario; """
+        cursor.execute(query, (nombre, apellidos, email, contrasena))
+        nuevo_id = cursor.fetchone()[0]
+       
+        return jsonify({"success": True,"message": "Usuario creado exitosamente"})
+    except Exception as e:
+        return jsonify({"error":str(e)}),500
+
 # ENDPOINT PARA OBTENER TODOS LOS USUARIOS
+
+@app.route("obtener-usuarios", methods=["GET"])
+def obtener_usuarios():
+    try:
+        cursor = db_conn.cursor()
+        query = """ SELECT id_usuario, nombre, apellidos, email, rol 
+        FROM usuarios
+        ORDER BY id_usuario ASC; 
+        """
+        cursor.execute(query)
+        usuarios_db = cursor.fetchall()
+        
+        usuarios_list = []
+        for user in usuarios_db:
+            usuarios_list.append({
+                "id_usuario": user[0],
+                "nombre": user[1],
+                "apellidos": user[2],
+                "email": user[3],
+            })
+
+        return jsonify({
+            "success": True,"usuarios": usuarios_list
+        })
+        
+    except Exception as e:
+        print(f"Error al obtener usuarios: {e}")
+        return jsonify({"error": str(e)}), 500
 
 # ENDPOINT PARA CREAR UN VEHICULO
 
+@app.route("/crear-vehiculo", methods=["POST"])
+def crear_vehiculo():
+    try:
+        data = request.get_json()
+        print(data)
+
+        placa = data.get("placa").upper().replace(" ", "") 
+        marca = data.get("marca")
+        modelo = data.get("modelo")
+        color = data.get("color")
+        
+        if not placa:
+            return jsonify({"error": "La placa es un campo obligatorio"}), 400
+        
+        cursor = db_conn.cursor()
+        
+        query_vehiculo = """INSERT INTO vehiculos (placa, marca, modelo, color)
+        VALUES (%s, %s, %s, %s)RETURNING id_vehiculo; """
+        
+        cursor.execute(query_vehiculo, (placa, marca, modelo, color))
+        nuevo_id = cursor.fetchone()[0]
+
+        return jsonify({"success": True,"message": "Vehículo registrado exitosamente","id_vehiculo": nuevo_id }), 201 
+        
+    except Exception as e:
+        db_conn.rollback() 
+        print(f"Error al registrar vehículo: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 # ENDPOINT PARA OBTENER TODOS LOS VEHICULOS
+
+@app.route("obtener-vehiculos", methods=["GET"])
+def obtener_vehiculos():
+    try:
+        cursor = db_conn.cursor()
+        
+        query = """ SELECT v.id_vehiculo,v.placa,v.marca,v.modelo,v.color,u.nombre,u.apellidos
+        FROM vehiculos v
+        LEFT JOIN usuarios u ON v.id_usuario = u.id_usuario
+        ORDER BY v.placa ASC; 
+        """
+        cursor.execute(query)
+        vehiculos_db = cursor.fetchall()
+        
+        vehiculos_list = []
+        for veh in vehiculos_db:
+            nombre_propietario = f"{veh[5]} {veh[6]}" if veh[5] else None 
+            
+            vehiculos_list.append({
+                "id_vehiculo": veh[0],
+                "placa": veh[1],
+                "marca": veh[2],
+                "modelo": veh[3],
+                "color": veh[4],
+                "propietario_nombre": nombre_propietario
+            })
+            
+
+        return jsonify({
+            "success": True, 
+            "vehiculos": vehiculos_list
+        })
+        
+    except Exception as e:
+        print(f"Error al obtener vehículos: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
