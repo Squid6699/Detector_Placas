@@ -4,6 +4,7 @@ import { TextInput, Button, Text } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { useState, useRef, useEffect } from 'react';
 import Constants from "expo-constants";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Incidencia() {
   const params = useLocalSearchParams();
@@ -13,6 +14,29 @@ export default function Incidencia() {
   const lng = Number(params.lng);
   const foto = String(params.foto);
   const { HOST_BACKEND_IOS } = Constants.expoConfig?.extra;
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userString = await AsyncStorage.getItem("user");
+        const user = userString ? JSON.parse(userString) : null;
+        console.log("Usuario guardado:", user);
+
+        if (user) {
+          setIncidenciaValues(prev => ({
+            ...prev,
+            id_infractor: user.id_usuario
+          }));
+        }
+      } catch (error) {
+        console.log("Error obteniendo usuario:", error);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+
 
   const fechaOriginal = new Date(params.fecha);
   const fechaFormateada =
@@ -29,6 +53,7 @@ export default function Incidencia() {
     lng,
     fecha: fechaFormateada,
     descripcion: "",
+    id_infractor: "",
   });
 
   const [evidencias, setEvidencias] = useState([]);
@@ -65,6 +90,7 @@ export default function Incidencia() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          "id_infractor": incidenciaValues.id_infractor,
           "placas": incidenciaValues.placas,
           "descripcion": incidenciaValues.descripcion,
           "lat": incidenciaValues.lat,

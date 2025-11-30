@@ -2,7 +2,7 @@ import { useState } from "react";
 import { View, StyleSheet, Image, KeyboardAvoidingView, Platform } from "react-native";
 import { TextInput, Button, Text } from "react-native-paper";
 import { Stack, useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from "expo-constants";
 
 export default function Login() {

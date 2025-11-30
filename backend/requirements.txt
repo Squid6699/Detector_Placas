@@ -7,4 +7,5 @@ flask-cors
 
 psycopg2-binary # Conector de PostgreSQL
 asyncpg
+python-dotenv
 

@@ -11,7 +11,7 @@ Para acceder a la base de datos
 docker exec -it postgres_local psql -U postgres -d detector_placas
 
 Para iniciar el contenedor
-cd backend docker compose up --build
+cd backend docker compose up
 
 Para ver todas las tablas en postgresql
 \dt 

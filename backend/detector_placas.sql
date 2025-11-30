@@ -39,3 +39,6 @@ VALUES ('Javier', 'Gomez', 'admin@placas.com', 'admin123', 'admin');
 
 INSERT INTO usuarios (nombre, apellidos, email, contrasena)
 VALUES ('Ana', 'Perez', 'ana@perez.com', 'ana123');
+
+INSERT INTO vehiculos (placa, marca, modelo, color, id_usuario)
+VALUES ('VNB954C', 'Toyota', 'Corolla', 'Rojo', 2);

@@ -195,6 +195,31 @@ def create_incidence():
     try:
         data = request.get_json()
         print(data)
+        id_infractor = data.get("idInfractor")
+        placas = data.get("placas")
+        descripcion = data.get("descripcion")
+        lat = data.get("lat")
+        lon = data.get("lon")
+        fecha = data.get("fecha")
+        imagen = data.get("imagen")
+        evidencias = data.get("evidencias", [])
+
+
+        cursor = db_conn.cursor()
+        query = "SELECT id_vehiculo FROM vehiculos WHERE placa = %s;"
+        cursor.execute(query, (placas,))
+        vehiculo = cursor.fetchone()
+
+        if not vehiculo:
+            return jsonify({"error": "Vehículo no encontrado"}), 404
+    
+        id_vehiculo = vehiculo[0]
+
+        # INSERTAR INCIDENCIA
+
+
+
+
         
         return jsonify({"success": True, "message": "Incidencia creada correctamente"})
     except Exception as e:
@@ -227,6 +252,19 @@ def login():
     except Exception as e:
         print(e)
         return jsonify({"error": str(e)}), 500
+    
+
+
+
+# ENDPOINT PARA OBTENER TODAS LAS INCIDENCIAS
+
+# ENDPOINT PARA CREAR UN USUARIO
+
+# ENDPOINT PARA OBTENER TODOS LOS USUARIOS
+
+# ENDPOINT PARA CREAR UN VEHICULO
+
+# ENDPOINT PARA OBTENER TODOS LOS VEHICULOS
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
