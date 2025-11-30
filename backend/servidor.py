@@ -1,6 +1,6 @@
 import uuid
 from email_utils import enviar_notificacion
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from ultralytics import YOLO
 from paddleocr import PaddleOCR
 import cv2
@@ -314,6 +314,11 @@ def login():
         return jsonify({"error": str(e)}), 500
     
 
+# ENDPOINT PARA OBTENER LAS IMAGENES EN UPLOADS
+@app.route('/uploads/<path:filename>')
+def get_uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
 # ENDPOINT PARA OBTENER TODAS LAS INCIDENCIAS
 
 @app.route("/obtener-incidencias", methods=["GET"])
@@ -321,10 +326,11 @@ def obtener_incidencias():
     try:
         cursor = db_conn.cursor()
         query=""" SELECT  i.id_incidencia, i.descripcion, i.fecha, i.latitud, i.longitud,i.fotoPrincipal,
-        i.fotosEvidencia,v.placa,u.nombre, u.apellidos
+        i.fotosEvidencia,v.placa,u.nombre, u.apellidos, ur.nombre, ur.apellidos, ur.email
         FROM incidencias i
         JOIN vehiculos v ON i.id_vehiculo = v.id_vehiculo
         JOIN usuarios u ON i.id_usuario = u.id_usuario
+        JOIN usuarios ur ON v.id_usuario = ur.id_usuario
         ORDER BY i.fecha DESC;
         """
         cursor.execute(query)
@@ -341,7 +347,9 @@ def obtener_incidencias():
                 "foto_principal": inc[5],
                 "fotos_evidencia": inc[6],
                 "placa_vehiculo": inc[7],
-                "usuario_reportador": f"{inc[8]} {inc[9]}"
+                "usuario_reportador": f"{inc[8]} {inc[9]}",
+                "usuario_propietario": f"{inc[10]} {inc[11]}",
+                "email_propietario": inc[12]
             })
 
         return jsonify({
