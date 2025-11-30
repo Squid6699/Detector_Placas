@@ -319,7 +319,7 @@ def crear_usuario():
 
 # ENDPOINT PARA OBTENER TODOS LOS USUARIOS
 
-@app.route("obtener-usuarios", methods=["GET"])
+@app.route("/obtener-usuarios", methods=["GET"])
 def obtener_usuarios():
     try:
         cursor = db_conn.cursor()
@@ -381,7 +381,7 @@ def crear_vehiculo():
 
 # ENDPOINT PARA OBTENER TODOS LOS VEHICULOS
 
-@app.route("obtener-vehiculos", methods=["GET"])
+@app.route("/obtener-vehiculos", methods=["GET"])
 def obtener_vehiculos():
     try:
         cursor = db_conn.cursor()
