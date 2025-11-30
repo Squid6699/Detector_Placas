@@ -43,7 +43,6 @@ export default function Login() {
             router.replace("/(tabs)");
 
         } catch (error) {
-            console.error(error);
             alert("Error al iniciar sesión");
         } finally {
             setLoading(false);

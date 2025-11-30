@@ -1,3 +1,5 @@
+import uuid
+from email_utils import enviar_notificacion
 from flask import Flask, request, jsonify
 from ultralytics import YOLO
 from paddleocr import PaddleOCR
@@ -8,6 +10,7 @@ from flask_cors import CORS
 import os
 from datetime import datetime
 import psycopg2
+import json
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -98,6 +101,8 @@ def detectar_placa():
                             continue
 
                         placas_detectadas.append(cleaned)
+        
+        print("Placas detectadas:", placas_detectadas)
 
         # ---------- SI NO DETECTA, NO GUARDAR ----------
         if not placas_detectadas:
@@ -106,23 +111,14 @@ def detectar_placa():
                 "message": "No se detectó ninguna placa."
             })
 
-        # ---------- SI DETECTA, GUARDAR LA IMAGEN ----------
-        filename = datetime.now().strftime("%Y%m%d_%H%M%S") + ".jpg"
-        file_path = os.path.join(UPLOAD_FOLDER, filename)
-
-        # Guardar imagen procesada en disco
-        cv2.imwrite(file_path, image)
-
         return jsonify({
             "success": True,
-            "placas": placas_detectadas,
-            "imagen_guardada": filename
+            "placas": placas_detectadas
+            # "imagen_guardada": filename
         })
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
 
 @app.route("/test", methods=["POST"])
 def test():
@@ -170,16 +166,6 @@ def test():
 
                         # Si pasa todos los filtros, esto sí es una placa real
                         # print("Detected Plate Text:", cleaned_text)
-                        
-                        # INSERCCION EN LA BASE DE DATOS
-                        # cursor = db_conn.cursor()
-                        # query = "INSERT INTO usuarios (nombre, apellidos, email, contrasena, rol) VALUES (%s, %s, %s, %s, %s);"
-                        
-                        # cursor.execute(query, ("Alma", "Cuen", "alma.cuen@gmail.com", "alma123", "usuario"))
-                        
-                        # db_conn.commit()
-                        # cursor.close()
-                        
 
                         return jsonify({
                             "success": True,
@@ -193,20 +179,21 @@ def test():
 @app.route("/create-incidence", methods=["POST"])
 def create_incidence():
     try:
-        data = request.get_json()
-        print(data)
-        id_infractor = data.get("idInfractor")
-        placas = data.get("placas")
-        descripcion = data.get("descripcion")
-        lat = data.get("lat")
-        lon = data.get("lon")
-        fecha = data.get("fecha")
-        imagen = data.get("imagen")
-        evidencias = data.get("evidencias", [])
+        id_infractor = request.form.get("id_infractor")
+        correo_infractor = request.form.get("correo_infractor")
+        nombre_infractor = request.form.get("nombre_infractor")
+        apellidos_infractor = request.form.get("apellidos_infractor")
+        placas = request.form.get("placas")
+        descripcion = request.form.get("descripcion")
+        lat = request.form.get("lat")
+        lon = request.form.get("lng")
+        fecha = request.form.get("fecha")
 
+        imagen = request.files.get("imgPrincipal")
+        evidencias = request.files.getlist("evidencias")
 
         cursor = db_conn.cursor()
-        query = "SELECT id_vehiculo FROM vehiculos WHERE placa = %s;"
+        query = "SELECT id_vehiculo, id_usuario FROM vehiculos WHERE placa = %s;"
         cursor.execute(query, (placas,))
         vehiculo = cursor.fetchone()
 
@@ -214,17 +201,87 @@ def create_incidence():
             return jsonify({"error": "Vehículo no encontrado"}), 404
     
         id_vehiculo = vehiculo[0]
+        id_usuario_reportado = vehiculo[1]
+
+        foto_principal_path = None
+        if imagen:
+            filename = f"{uuid.uuid4()}.jpg"
+            save_path = os.path.join(UPLOAD_FOLDER, filename)
+            imagen.save(save_path)
+            foto_principal_path = save_path
+
+        rutas_evidencias = []
+        for evidencia in evidencias:
+            fname = f"{uuid.uuid4()}.jpg"
+            path = os.path.join(UPLOAD_FOLDER, fname)
+            evidencia.save(path)
+            rutas_evidencias.append(path)
+
+        # Guardar como JSON en PostgreSQL
+        evidencias_json = json.dumps(rutas_evidencias)
 
         # INSERTAR INCIDENCIA
 
-        query_incidencia = """INSERT INTO incidencias ( id_infractor, id_vehiculo, descripcion, latitud, longitud, fecha, fotoPrincipal , fotosEvidencia)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s,%s) RETURNING id_incidencia;"""
-        cursor.execute(query_incidencia, (id_infractor, id_vehiculo,descripcion,lat,lon,fecha,imagen,evidencias))
-        id_incidencia = cursor.fetchone()[0] 
-        conn.commit()
+        query_incidencia = """
+            INSERT INTO incidencias 
+            (id_usuario, id_vehiculo, descripcion, latitud, longitud, fecha, fotoPrincipal, fotosEvidencia)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id_incidencia;
+        """
+        cursor.execute(query_incidencia, (
+            id_infractor, id_vehiculo, descripcion, lat, lon, fecha,
+            foto_principal_path, evidencias_json
+        ))        
+        id_incidencia = cursor.fetchone()[0]
+
+        #OBTENER CORREO DEL USUARIO REPORTADO Y ENVIAR NOTIFICACION POR CORREO
+        query_usuario = "SELECT email, nombre, apellidos FROM usuarios WHERE id_usuario = %s;"
+        cursor.execute(query_usuario, (id_usuario_reportado,))
+        usuario = cursor.fetchone()
+
+        if usuario:
+            email_reportado, nombre, apellidos = usuario
+
+            mensaje = f"""
+                <h2>Notificación de nueva incidencia</h2>
+                <p>Hola <b>{nombre} {apellidos}</b>,</p>
+                <p>Se ha registrado una nueva incidencia relacionada con tu vehículo con placas <b>{placas}</b>.</p>
+                <p><b>Descripción:</b> {descripcion}</p>
+                <p><b>Ubicación:</b> lat {lat}, lon {lon}</p>
+                <p>Fecha: {fecha}</p>
+            """
+
+            enviado = enviar_notificacion(
+                email_destino=email_reportado,
+                asunto="Nueva incidencia registrada",
+                mensaje=mensaje,
+                img_principal=foto_principal_path,
+                evidencias=rutas_evidencias
+            )
+
+            mensaje_infractor = f"""
+                <h2>Notificación de incidencia registrada</h2>
+                <p>Hola <b>{nombre_infractor} {apellidos_infractor}</b>,</p>
+                <p>Se ha registrado una nueva incidencia relacionada con el vehículo de placas <b>{placas}</b>.</p>
+                <p><b>Descripción:</b> {descripcion}</p>
+                <p><b>Ubicación:</b> lat {lat}, lon {lon}</p>
+                <p>Fecha: {fecha}</p>
+            """
+
+            enviado_infractor = enviar_notificacion(
+                email_destino=correo_infractor,
+                asunto="Incidencia registrada",
+                mensaje=mensaje_infractor,
+                img_principal=foto_principal_path,
+                evidencias=rutas_evidencias
+            )
+
+
+        db_conn.commit()
 
         return jsonify({"success": True, "message": "Incidencia creada correctamente"})
     except Exception as e:
+        db_conn.rollback()
         return jsonify({"error": str(e)}), 500
 
     
@@ -236,7 +293,7 @@ def login():
         password = data.get("password")
         
         cursor = db_conn.cursor()
-        query = "SELECT id_usuario, nombre, apellidos, rol FROM usuarios WHERE email = %s AND contrasena = %s;"
+        query = "SELECT id_usuario, nombre, apellidos, rol, email FROM usuarios WHERE email = %s AND contrasena = %s;"
         cursor.execute(query, (email, password))
         user = cursor.fetchone()
         cursor.close()
@@ -246,7 +303,8 @@ def login():
                 "id_usuario": user[0],
                 "nombre": user[1],
                 "apellidos": user[2],
-                "rol": user[3]
+                "rol": user[3],
+                "email": user[4]
             }
             return jsonify({"success": True, "user": user_data, "token": "dummy-jwt-token"}), 200
         else:

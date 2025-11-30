@@ -1,5 +1,5 @@
 import { View, StyleSheet, Image, Modal, Pressable, Animated, ScrollView } from 'react-native';
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { TextInput, Button, Text } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { useState, useRef, useEffect } from 'react';
@@ -8,27 +8,31 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Incidencia() {
   const params = useLocalSearchParams();
-
+  const router = useRouter();
   const placas = JSON.parse(params.placas);
   const lat = Number(params.lat);
   const lng = Number(params.lng);
   const foto = String(params.foto);
   const { HOST_BACKEND_IOS } = Constants.expoConfig?.extra;
 
+  const [loadingUser, setLoadingUser] = useState(false);
+
   useEffect(() => {
     const loadUser = async () => {
       try {
         const userString = await AsyncStorage.getItem("user");
         const user = userString ? JSON.parse(userString) : null;
-        console.log("Usuario guardado:", user);
-
         if (user) {
           setIncidenciaValues(prev => ({
             ...prev,
-            id_infractor: user.id_usuario
+            id_infractor: user.id_usuario,
+            correo_infractor: user.email,
+            nombre_infractor: user.nombre,
+            apellidos_infractor: user.apellidos
           }));
         }
       } catch (error) {
+        console.log("Error cargando usuario desde almacenamiento:", error);
         console.log("Error obteniendo usuario:", error);
       }
     };
@@ -40,20 +44,33 @@ export default function Incidencia() {
 
   const fechaOriginal = new Date(params.fecha);
   const fechaFormateada =
-    `${String(fechaOriginal.getDate()).padStart(2, '0')}/` +
+    `${fechaOriginal.getFullYear()}/` +
     `${String(fechaOriginal.getMonth() + 1).padStart(2, '0')}/` +
-    `${fechaOriginal.getFullYear()} ` +
+    `${String(fechaOriginal.getDate()).padStart(2, '0')} ` +
     `${String(fechaOriginal.getHours()).padStart(2, '0')}:` +
     `${String(fechaOriginal.getMinutes()).padStart(2, '0')}:` +
     `${String(fechaOriginal.getSeconds()).padStart(2, '0')}`;
 
-  const [incidenciaValues, setIncidenciaValues] = useState({
-    placas,
+  const [incidenciaValues, setIncidenciaValues] = useState<{
+    placas: any;
+    lat: number | null;
+    lng: number | null;
+    fecha: string;
+    descripcion: string;
+    id_infractor: string;
+    correo_infractor: string;
+    nombre_infractor: string;
+    apellidos_infractor: string;
+  }>({
+    placas: placas[0] ?? "",
     lat,
     lng,
     fecha: fechaFormateada,
     descripcion: "",
     id_infractor: "",
+    correo_infractor: "",
+    nombre_infractor: "",
+    apellidos_infractor: "",
   });
 
   const [evidencias, setEvidencias] = useState([]);
@@ -84,34 +101,70 @@ export default function Incidencia() {
 
   const sumitIncidencia = async () => {
     try {
+      setLoadingUser(true);
+      const formData = new FormData();
+
+      formData.append("id_infractor", incidenciaValues.id_infractor);
+      formData.append("correo_infractor", incidenciaValues.correo_infractor);
+      formData.append("nombre_infractor", incidenciaValues.nombre_infractor);
+      formData.append("apellidos_infractor", incidenciaValues.apellidos_infractor);
+
+      formData.append("placas", incidenciaValues.placas);
+      formData.append("descripcion", incidenciaValues.descripcion);
+      formData.append("lat", incidenciaValues.lat);
+      formData.append("lng", incidenciaValues.lng);
+      formData.append("fecha", incidenciaValues.fecha);
+
+      // FOTO PRINCIPAL
+      formData.append("imgPrincipal", {
+        uri: foto,     // <-- esta es la uri recibida de la cámara
+        name: "principal.jpg",
+        type: "image/jpeg"
+      });
+
+      // EVIDENCIAS
+      evidencias.forEach((uri, index) => {
+        formData.append("evidencias", {
+          uri,
+          name: `evidencia_${index}.jpg`,
+          type: "image/jpeg"
+        });
+      });
+
       const response = await fetch(`${HOST_BACKEND_IOS}/create-incidence`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          "id_infractor": incidenciaValues.id_infractor,
-          "placas": incidenciaValues.placas,
-          "descripcion": incidenciaValues.descripcion,
-          "lat": incidenciaValues.lat,
-          "lng": incidenciaValues.lng,
-          "fecha": incidenciaValues.fecha,
-          "imgPrincipal": foto,
-          "evidencias": evidencias,
-        }),
+        method: "POST",
+        body: formData,   // NO pongas headers, RN los setea solo
       });
 
       const data = await response.json();
 
       if (data.success) {
         alert(data.message);
+        // LIMPIAR FORMULARIO
+        setIncidenciaValues(prev => ({
+          ...prev,
+          placas: "",
+          lat: null,
+          lng: null,
+          fecha: "",
+          descripcion: "",
+          id_infractor: "",
+          correo_infractor: "",
+          nombre_infractor: "",
+          apellidos_infractor: "",
+        }));
+        setLoadingUser(false);
+        router.back();
       } else {
-        alert('Error al enviar la incidencia');
+        setLoadingUser(false);
+        alert("Error al enviar la incidencia");
       }
     } catch (error) {
-      alert('Error al enviar la incidencia');
+      setLoadingUser(false);
+      alert("Error al enviar la incidencia");
     }
-  }
+  };
+
 
   return (
     <>
@@ -177,7 +230,7 @@ export default function Incidencia() {
           ))}
         </View>
 
-        <Button mode="contained" onPress={sumitIncidencia} style={styles.button}>Enviar datos</Button>
+        <Button mode="contained" onPress={sumitIncidencia} style={styles.button} disabled={loadingUser}>{loadingUser ? "Creando incidencia..." : "Crear incidencia"}</Button>
 
       </ScrollView>
 

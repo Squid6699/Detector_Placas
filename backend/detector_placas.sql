@@ -27,9 +27,8 @@ CREATE TABLE incidencias (
     fecha TIMESTAMP NOT NULL,
     latitud DECIMAL(9,6),
     longitud DECIMAL(9,6),
-    fotoPrincipal BYTEA,
-    fotosEvidencia BYTEA[]
-
+    fotoPrincipal text,
+    fotosEvidencia text
 );
 
 -- Inserciones 
@@ -38,7 +37,7 @@ INSERT INTO usuarios (nombre, apellidos, email, contrasena, rol)
 VALUES ('Javier', 'Gomez', 'admin@placas.com', 'admin123', 'admin');
 
 INSERT INTO usuarios (nombre, apellidos, email, contrasena)
-VALUES ('Ana', 'Perez', 'ana@perez.com', 'ana123');
+VALUES ('Ana', 'Perez', 'brayanaviles2017@gmail.com', 'ana123');
 
 INSERT INTO vehiculos (placa, marca, modelo, color, id_usuario)
 VALUES ('VNB954C', 'Toyota', 'Corolla', 'Rojo', 2);

@@ -47,7 +47,7 @@ export default function index() {
       } as any);
 
       // Enviar al servidor
-      const response = await fetch(`${HOST_BACKEND_IOS}/test`, {
+      const response = await fetch(`${HOST_BACKEND_IOS}/detectar-placa`, {
         method: "POST",
         body: formData,
         headers: {
