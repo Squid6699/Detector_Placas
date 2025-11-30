@@ -54,6 +54,14 @@ export default function Perfil() {
         />
 
         <TextInput
+          label="Correo electrónico"
+          value={user.email.toUpperCase()}
+          mode="outlined"
+          style={styles.input}
+          disabled
+        />
+
+        <TextInput
           label="Rol"
           value={user.rol.toUpperCase()}
           mode="outlined"
