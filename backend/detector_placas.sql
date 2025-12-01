@@ -37,7 +37,13 @@ INSERT INTO usuarios (nombre, apellidos, email, contrasena, rol)
 VALUES ('Javier', 'Gomez', 'admin@placas.com', 'admin123', 'admin');
 
 INSERT INTO usuarios (nombre, apellidos, email, contrasena)
-VALUES ('Ana', 'Perez', 'brayanaviles2017@gmail.com', 'ana123');
+VALUES ('Brayan', 'Aviles', 'brayanaviles2017@gmail.com', 'brayan123');
+
+INSERT INTO usuarios (nombre, apellidos, email, contrasena)
+VALUES ('Alma', 'Cuen', 'almavictoriacuenarmenta@gmail.com', 'alma123');
 
 INSERT INTO vehiculos (placa, marca, modelo, color, id_usuario)
-VALUES ('VNB954C', 'Toyota', 'Corolla', 'Rojo', 2);
+VALUES ('VNB954C', 'Volkswagen', 'Jetta', 'Gris', 2);
+
+INSERT INTO vehiculos (placa, marca, modelo, color, id_usuario)
+VALUES ('VJK525C', 'Ford', 'Fiesta', 'Azul', 3);
