@@ -282,6 +282,7 @@ def create_incidence():
         return jsonify({"success": True, "message": "Incidencia creada correctamente"})
     except Exception as e:
         db_conn.rollback()
+        print(f"Error al crear incidencia: {e}")
         return jsonify({"error": str(e)}), 500
 
     
@@ -362,26 +363,51 @@ def obtener_incidencias():
 
 # ENDPOINT PARA CREAR UN USUARIO
 
-@app.route("/crear-usuarios", methods=["POST"])
+@app.route("/crear-usuario", methods=["POST"])
 def crear_usuario():
     try:
         data = request.get_json()
-        print(data)
-        
+
         nombre = data.get("nombre")
         apellidos = data.get("apellidos")
-        email = data.get("email").lower()
-        contrasena = data.get("contrasena")
-    
+        email = data.get("email")
+        # contrasena = data.get("contrasena")
+        contrasena = "default123"
+        rol = data.get("rol", "USUARIO")  # valor default
+
+        # Validación básica
+        if not nombre or not apellidos or not email or not contrasena:
+            return jsonify({"status": "error", "message": "Faltan datos requeridos"}), 400
+
         cursor = db_conn.cursor()
-        query = """ INSERT INTO usuarios (nombre, apellidos, email, contrasena)
-        VALUES (%s, %s, %s, %s)RETURNING id_usuario; """
-        cursor.execute(query, (nombre, apellidos, email, contrasena))
-        nuevo_id = cursor.fetchone()[0]
-       
-        return jsonify({"success": True,"message": "Usuario creado exitosamente"})
+
+        # Validar si el email ya existe
+        cursor.execute("SELECT id_usuario FROM usuarios WHERE email = %s", (email,))
+        if cursor.fetchone():
+            return jsonify({"status": "error", "message": "El correo ya está registrado"}), 400
+
+        # Insertar usuario
+        query = """
+            INSERT INTO usuarios (nombre, apellidos, email, contrasena, rol)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id_usuario;
+        """
+
+        cursor.execute(query, (nombre, apellidos, email, contrasena, rol))
+        db_conn.commit()
+
+        new_id = cursor.fetchone()[0]
+
+        return jsonify({
+            "status": "success",
+            "message": "Usuario creado correctamente",
+            "id_usuario": new_id
+        }), 201
+
     except Exception as e:
-        return jsonify({"error":str(e)}),500
+        print("ERROR crear usuario:", e)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 # ENDPOINT PARA OBTENER TODOS LOS USUARIOS
 
@@ -389,29 +415,65 @@ def crear_usuario():
 def obtener_usuarios():
     try:
         cursor = db_conn.cursor()
-        query = """ SELECT id_usuario, nombre, apellidos, email, rol 
-        FROM usuarios
-        ORDER BY id_usuario ASC; 
+
+        query = """
+        SELECT 
+            u.id_usuario,
+            u.nombre,
+            u.apellidos,
+            u.email,
+            v.id_vehiculo,
+            v.placa,
+            v.marca,
+            v.modelo,
+            v.color
+        FROM usuarios u
+        LEFT JOIN vehiculos v ON u.id_usuario = v.id_usuario
+        ORDER BY u.id_usuario ASC;
         """
+
         cursor.execute(query)
-        usuarios_db = cursor.fetchall()
-        
-        usuarios_list = []
-        for user in usuarios_db:
-            usuarios_list.append({
-                "id_usuario": user[0],
-                "nombre": user[1],
-                "apellidos": user[2],
-                "email": user[3],
-            })
+        rows = cursor.fetchall()
+
+        usuarios_dict = {}
+
+        for row in rows:
+            id_usuario = row[0]
+
+            # Si el usuario aun no está en el diccionario, agregarlo
+            if id_usuario not in usuarios_dict:
+                usuarios_dict[id_usuario] = {
+                    "id_usuario": row[0],
+                    "nombre": row[1],
+                    "apellidos": row[2],
+                    "email": row[3],
+                    "vehiculos": []
+                }
+
+            # Si tiene vehículo asociado, agregarlo
+            id_vehiculo = row[4]
+            if id_vehiculo is not None:
+                vehiculo = {
+                    "id_vehiculo": row[4],
+                    "placa": row[5],
+                    "marca": row[6],
+                    "modelo": row[7],
+                    "color": row[8]
+                }
+                usuarios_dict[id_usuario]["vehiculos"].append(vehiculo)
+
+        # Convertir dict → lista
+        usuarios_list = list(usuarios_dict.values())
 
         return jsonify({
-            "success": True,"usuarios": usuarios_list
+            "success": True,
+            "usuarios": usuarios_list
         })
-        
+
     except Exception as e:
         print(f"Error al obtener usuarios: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 # ENDPOINT PARA CREAR UN VEHICULO
 
@@ -425,16 +487,17 @@ def crear_vehiculo():
         marca = data.get("marca")
         modelo = data.get("modelo")
         color = data.get("color")
+        id_usuario = data.get("id_usuario")
         
         if not placa:
             return jsonify({"error": "La placa es un campo obligatorio"}), 400
         
         cursor = db_conn.cursor()
         
-        query_vehiculo = """INSERT INTO vehiculos (placa, marca, modelo, color)
-        VALUES (%s, %s, %s, %s)RETURNING id_vehiculo; """
+        query_vehiculo = """INSERT INTO vehiculos (placa, marca, modelo, color, id_usuario)
+        VALUES (%s, %s, %s, %s, %s) RETURNING id_vehiculo; """
         
-        cursor.execute(query_vehiculo, (placa, marca, modelo, color))
+        cursor.execute(query_vehiculo, (placa, marca, modelo, color, id_usuario))
         nuevo_id = cursor.fetchone()[0]
 
         return jsonify({"success": True,"message": "Vehículo registrado exitosamente","id_vehiculo": nuevo_id }), 201 
@@ -452,17 +515,35 @@ def obtener_vehiculos():
     try:
         cursor = db_conn.cursor()
         
-        query = """ SELECT v.id_vehiculo,v.placa,v.marca,v.modelo,v.color,u.nombre,u.apellidos
-        FROM vehiculos v
-        LEFT JOIN usuarios u ON v.id_usuario = u.id_usuario
-        ORDER BY v.placa ASC; 
+        query = """
+            SELECT 
+                v.id_vehiculo,
+                v.placa,
+                v.marca,
+                v.modelo,
+                v.color,
+                u.nombre,
+                u.apellidos
+            FROM vehiculos v
+            LEFT JOIN usuarios u ON v.id_usuario = u.id_usuario
+            ORDER BY 
+                COALESCE(u.nombre, ''), 
+                COALESCE(u.apellidos, ''), 
+                v.placa;
         """
+        
         cursor.execute(query)
         vehiculos_db = cursor.fetchall()
         
         vehiculos_list = []
+        
         for veh in vehiculos_db:
-            nombre_propietario = f"{veh[5]} {veh[6]}" if veh[5] else None 
+            # Si no tiene propietario, poner texto
+            propietario = None
+            if veh[5]:  # Si nombre NO es NULL
+                propietario = f"{veh[5]} {veh[6] if veh[6] else ''}".strip()
+            else:
+                propietario = "Sin propietario"
             
             vehiculos_list.append({
                 "id_vehiculo": veh[0],
@@ -470,18 +551,19 @@ def obtener_vehiculos():
                 "marca": veh[2],
                 "modelo": veh[3],
                 "color": veh[4],
-                "propietario_nombre": nombre_propietario
+                "propietario_nombre": propietario
             })
-            
 
         return jsonify({
-            "success": True, 
+            "success": True,
             "vehiculos": vehiculos_list
         })
         
     except Exception as e:
         print(f"Error al obtener vehículos: {e}")
         return jsonify({"error": str(e)}), 500
+
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

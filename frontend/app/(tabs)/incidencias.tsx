@@ -5,7 +5,7 @@ import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import Constants from "expo-constants";
 import { MotiView } from "moti";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const getImageUrl = (path: string | null, host: string) => {
   if (!path) return null;
@@ -71,6 +71,11 @@ export default function TabTwoScreen() {
 
   // Prepara las fotos de evidencia para el modal
   const fotosEvidencia = parseFotosEvidencia(selectedIncidencia?.fotos_evidencia);
+
+  useEffect(() => {
+    // RECARGAR DATOS AL CARGAR LA PAGINA
+    fetchIncidencias();
+  }, []);
 
 
   return (

@@ -28,16 +28,25 @@ CREATE TABLE incidencias (
     latitud DECIMAL(9,6),
     longitud DECIMAL(9,6),
     fotoPrincipal text,
-    fotosEvidencia text
+    fotosEvidencia text[]
 );
 
 -- Inserciones 
 
 INSERT INTO usuarios (nombre, apellidos, email, contrasena, rol)
-VALUES ('Javier', 'Gomez', 'admin@placas.com', 'admin123', 'admin');
+VALUES ('Javier', 'Gomez', 'buenoqueteimporta69@gmail.com', 'admin123', 'admin');
 
 INSERT INTO usuarios (nombre, apellidos, email, contrasena)
-VALUES ('Ana', 'Perez', 'brayanaviles2017@gmail.com', 'ana123');
+VALUES ('Alma', 'Cuen', 'brayanaviles2017@gmail.com', 'alma123');
+
+INSERT INTO usuarios (nombre, apellidos, email, contrasena)
+VALUES ('Brayan', 'Aviles', 'brayanaviles96@gmail.com', 'alma123');
 
 INSERT INTO vehiculos (placa, marca, modelo, color, id_usuario)
-VALUES ('VNB954C', 'Toyota', 'Corolla', 'Rojo', 2);
+VALUES ('VNB954C', 'Volkswagen', 'Jetta', 'Gris', 2);
+
+INSERT INTO vehiculos (placa, marca, modelo, color, id_usuario)
+VALUES ('VKJ525C', 'Ford', 'Fiesta', 'Gris', 3);
+
+INSERT INTO vehiculos (placa, marca, modelo, color, id_usuario)
+VALUES ('VNB800A', 'Hyundai', 'Accent', 'Blanco', 3);
