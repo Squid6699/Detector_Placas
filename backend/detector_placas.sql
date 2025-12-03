@@ -28,7 +28,7 @@ CREATE TABLE incidencias (
     latitud DECIMAL(9,6),
     longitud DECIMAL(9,6),
     fotoPrincipal text,
-    fotosEvidencia text[]
+    fotosEvidencia text
 );
 
 -- Inserciones 
@@ -37,16 +37,27 @@ INSERT INTO usuarios (nombre, apellidos, email, contrasena, rol)
 VALUES ('Javier', 'Gomez', 'buenoqueteimporta69@gmail.com', 'admin123', 'admin');
 
 INSERT INTO usuarios (nombre, apellidos, email, contrasena)
+<<<<<<< HEAD
 VALUES ('Alma', 'Cuen', 'brayanaviles2017@gmail.com', 'alma123');
 
 INSERT INTO usuarios (nombre, apellidos, email, contrasena)
 VALUES ('Brayan', 'Aviles', 'brayanaviles96@gmail.com', 'alma123');
+=======
+VALUES ('Brayan', 'Aviles', 'brayanaviles2017@gmail.com', 'brayan123');
+
+INSERT INTO usuarios (nombre, apellidos, email, contrasena)
+VALUES ('Alma', 'Cuen', 'almavictoriacuenarmenta@gmail.com', 'alma123');
+>>>>>>> efdd51afe7f40a909ef9726762e8a6d588555852
 
 INSERT INTO vehiculos (placa, marca, modelo, color, id_usuario)
 VALUES ('VNB954C', 'Volkswagen', 'Jetta', 'Gris', 2);
 
 INSERT INTO vehiculos (placa, marca, modelo, color, id_usuario)
+<<<<<<< HEAD
 VALUES ('VKJ525C', 'Ford', 'Fiesta', 'Gris', 3);
 
 INSERT INTO vehiculos (placa, marca, modelo, color, id_usuario)
 VALUES ('VNB800A', 'Hyundai', 'Accent', 'Blanco', 3);
+=======
+VALUES ('VJK525C', 'Ford', 'Fiesta', 'Azul', 3);
+>>>>>>> efdd51afe7f40a909ef9726762e8a6d588555852
